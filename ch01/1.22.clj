@@ -1,3 +1,6 @@
+(ns gcd
+  (:refer-clojure))
+
 (defn divides? [a b]
   (= (rem b a) 0))
 
