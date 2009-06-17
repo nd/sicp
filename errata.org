@@ -1,0 +1,6 @@
+
+* 1.2.5 
+  b^n = (b^(b/2))^2    if n is even
+  should be:
+  b^n = (b^(n/2))^2    if n is even
+  
