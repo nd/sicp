@@ -1,3 +1,6 @@
+(ns ex.2.1
+  (:use gcd))
+
 (load-file "gcd.clj")
 
 (defn make-rat [n d] 
