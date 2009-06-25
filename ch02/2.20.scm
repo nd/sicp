@@ -1,0 +1,10 @@
+(define (same-parity . args)
+  (define (select predicat from result)
+    (if (null? from)
+        result
+        (if (predicat (car from))
+            (select predicat (cdr from) (append result (list (car from))))
+            (select predicat (cdr from) result))))
+  (if (even? (car args))
+      (select even? args (list))
+      (select odd? args (list))))
