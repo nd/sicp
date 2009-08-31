@@ -8,3 +8,8 @@
   (let ((c-start (make-wire)))
     (set-signal! c-start 0)
     (iter a b s c-start)))
+
+;; half_adder_delay = max(or_delay, and_delay + inv_delay) + and_delay
+;; full_adder_delay = 2 * half_adder_delay + or_delay
+;; riple_carry_delay = n * full_adder_delay = 2n * half_adder_delay + n * or_delay =
+;; = 2n * max(or_delay, and_delay + inv_delay) + 2n * and_delay + n * or_delay
