@@ -19,3 +19,7 @@
 * с. 253
   упр. 3.23
   ... frontinsertdeque! вместо front-insert-deque!
+* с. 266
+  которая работает с theagenda
+  должно быть:
+  которая работает с the-agenda
