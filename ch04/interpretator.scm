@@ -36,9 +36,9 @@
             (list-of-values (rest-operands exps) env))))
 
 (define (eval-if exp env)
-       (if (true? (eval (if-predicate exp) env))
-           (eval (if-consequent exp) env)
-           (eval (if-alternative exp) env)))
+  (if (true? (eval (if-predicate exp) env))
+      (eval (if-consequent exp) env)
+      (eval (if-alternative exp) env)))
 
 (define (eval-sequence exps env)
   (cond ((last-exp? exps) (eval (first-exp exps) env))
