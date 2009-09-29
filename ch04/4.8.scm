@@ -11,6 +11,7 @@
 
 (define (make-definition var value) (list 'define var value))
 
+(define (make-named-let name assignments body) (list 'let name assignments body))
 (define (let? exp) (eq? (car exp) 'let))
 (define (named-let? exp) (not (list? (cadr exp))))
 (define (let-name exp) (cadr exp))
