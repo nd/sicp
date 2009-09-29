@@ -1,0 +1,25 @@
+(define (let->combination exp)
+  (let ((parameters (map (lambda (x) (assignment-var x))   (let-assignments exp)))
+        (values     (map (lambda (x) (assignment-value x)) (let-assignments exp))))
+    (if (named-let? exp)
+          (make-begin
+           (list
+           (make-definition (let-name exp) (make-lambda parameters (let-body exp)))
+           (append (list (let-name exp)) values)))
+        (append (list (make-lambda parameters (let-body exp)))
+                values))))
+
+(define (make-definition var value) (list 'define var value))
+
+(define (let? exp) (eq? (car exp) 'let))
+(define (named-let? exp) (not (list? (cadr exp))))
+(define (let-name exp) (cadr exp))
+(define (let-body exp) (cddr exp))
+(define (first-assignment assignments) (car assignments))
+(define (rest-assignment  assignments) (cdr assignments))
+(define (assignment-var   assignment)  (car assignment))
+(define (assignment-value assignment)  (cadr assignment))
+(define (let-assignments exp)
+  (if (named-let? exp)
+      (caddr exp)
+      (cadr exp)))
