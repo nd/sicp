@@ -1,12 +1,13 @@
 (define apply-in-underlying-scheme apply)
 
 (define (eval exp env)
-  (cond ((self-evaluating? exp) exp)
+  (cond ((self-evaluating? exp)  exp)
         ((variable? exp)        (lookup-variable-value exp env))
         ((quoted? exp)          (text-of-quotation exp))
         ((assignment? exp)      (eval-assignment exp env))
         ((definition? exp)      (eval-definition exp env))
         ((if? exp)              (eval-if exp env))
+        ((let? exp)             (eval (let->combination exp) env))
         ((lambda? exp)          (make-procedure (lambda-parameters exp)
                                                 (lambda-body exp)
                                                 env))
@@ -18,18 +19,13 @@
          (error "Unknown expression type -- EVAL" exp))))
 
 (define (apply procedure arguments)
-  (cond ((primitive-procedure? procedure)
-         (apply-primitive-procedure procedure arguments))
+  (cond ((primitive-procedure? procedure) (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure)
-         (eval-sequence
-          (procedure-body procedure)
-          (extend-environment
-           (procedure-parameters procedure)
-           arguments
-           (procedure-environment procedure))))
-        (else
-         (error
-          "Unknown procedure type -- APPLY" procedure))))
+         (eval-sequence (procedure-body procedure)
+                        (extend-environment (procedure-parameters procedure)
+                                            arguments
+                                            (procedure-environment procedure))))
+        (else (error "Unknown procedure type -- APPLY" procedure))))
 
 (define (list-of-values exps env)
   (if (no-operands? exps)
@@ -66,8 +62,7 @@
 
 (define (variable? exp) (symbol? exp))
 
-(define (quoted? exp)
-  (tagged-list? exp 'quote))
+(define (quoted? exp) (tagged-list? exp 'quote))
 (define (text-of-quotation exp) (cadr exp))
 
 (define (tagged-list? exp tag)
@@ -75,13 +70,12 @@
       (eq? (car exp) tag)
       false))
 
-(define (assignment? exp)
-  (tagged-list? exp 'set!))
+(define (assignment? exp) (tagged-list? exp 'set!))
 (define (assignment-variable exp) (cadr exp))
 (define (assignment-value exp) (caddr exp))
+(define (make-assignment var val) (list 'set! var val))
 
-(define (definition? exp)
-  (tagged-list? exp 'define))
+(define (definition? exp) (tagged-list? exp 'define))
 (define (definition-variable exp)
   (if (symbol? (cadr exp))
       (cadr exp)
@@ -271,21 +265,27 @@
 (define (and-expressions exp) (cdr exp))
 (define (or-expressions  exp) (cdr exp))
 
-
-
+;;---
+;;let
+;;---
 (define (let->combination exp)
-  (let ((parameters (map assignment-var   (let-assignments exp)))
-        (values     (map assignment-value (let-assignments exp))))
-    (append (list (make-lambda parameters (let-body exp))) values)))
-
+  (let ((parameters (map let-assignment-var   (let-assignments exp)))
+        (values     (map let-assignment-value (let-assignments exp)))
+        (body       (let-body exp)))
+    (append (list (make-lambda parameters body)) values)))
 (define (let? exp) (eq? (car exp) 'let))
+(define (make-let assignments body) (cons 'let (cons assignments body)))
 (define (let-assignments exp) (cadr exp))
 (define (let-body exp) (cddr exp))
 (define (first-assignment assignments) (car assignments))
 (define (rest-assignment  assignments) (cdr assignments))
-(define (assignment-var   assignment)  (car assignment))
-(define (assignment-value assignment)  (cadr assignment))
-
+(define (make-let-assignment var val) (list var val))
+(define (let-assignment-var   assignment)  (car assignment))
+(define (let-assignment-value assignment)  (cadr assignment))
+(define (eval-let exp env)
+  (let ((combintation (let->combination exp)))
+    (apply (eval (operator combintation) env)
+           (list-of-values (operands combintation) env))))
 
 
 (define (cond? exp) (tagged-list? exp 'cond))
@@ -302,16 +302,24 @@
         (if (cond-else-clause? first)
             (if (null? rest)
                 (sequence->exp (cond-actions first))
-                (error "ELSE clause isn't last -- COND->IF"
-                       clauses))
+                (error "ELSE clause isn't last -- COND->IF" clauses))
             (make-if (cond-predicate first)
                      (sequence->exp (cond-actions first))
                      (expand-clauses rest))))))
 
+(define (scan-out-defines body)
+  (let* ((defs (filter definition? body))
+         (non-defs (filter (lambda (x) (not (definition? x))) body))
+         (assignments (map (lambda (def) (make-let-assignment (definition-variable def) ''*unassigned*)) defs))
+         (sets (map (lambda (def) (make-assignment (definition-variable def) (definition-value def))) defs)))
+    (if (not (null? defs))
+        (list (let->combination (make-let assignments (append sets non-defs))))
+        body)))
+
 (define (make-procedure parameters body env) (list 'procedure parameters body env))
 (define (compound-procedure? p) (tagged-list? p 'procedure))
 (define (procedure-parameters p) (cadr p))
-(define (procedure-body p) (caddr p))
+(define (procedure-body p) (scan-out-defines (caddr p)))
 (define (procedure-environment p) (cadddr p))
 
 (define (true? x) (not (eq? x false)))
