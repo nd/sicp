@@ -1,0 +1,8 @@
+(define (scan-out-defines body)
+  (let* ((defs (filter definition? body))
+         (non-defs (filter (lambda (x) (not (definition? x))) body))
+         (initial-defs (map (lambda (def) (make-definition (definition-variable def) ''*unassigned*)) defs))
+         (sets (map (lambda (def) (make-assignment (definition-variable def) (definition-value def))) defs)))
+    (if (not (null? defs))
+        (append initial-defs sets non-defs)
+        body)))
