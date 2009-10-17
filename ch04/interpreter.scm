@@ -75,6 +75,7 @@
 (define (assignment-value exp) (caddr exp))
 (define (make-assignment var val) (list 'set! var val))
 
+(define (make-definition var val) (list 'define var val))
 (define (definition? exp) (tagged-list? exp 'define))
 (define (definition-variable exp)
   (if (symbol? (cadr exp))
