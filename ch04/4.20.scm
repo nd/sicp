@@ -1,0 +1,8 @@
+(define (letrec-assignments exp) (cadr exp))
+(define (letrec-body exp) (cddr exp))
+(define (letrec->let exp)
+  (let ((assignments (letrec-assignments exp))
+        (body (letrec-body exp)))
+    (make-let (map (lambda (a) (make-let-assignment (let-assignment-var a) ''*unassigned*)) assignments)
+              (append (map (lambda (a) (make-assignment (let-assignment-var a) (let-assignment-value a))) assignments)
+                      body))))
