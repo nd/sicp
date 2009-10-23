@@ -155,7 +155,8 @@
 (define (eval-let exp env)
   (let ((combintation (let->combination exp)))
     (apply (eval (operator combintation) env)
-           (list-of-values (operands combintation) env))))
+           (list-of-values (operands combintation) env)
+           env)))
 
 
 (define (cond? exp) (tagged-list? exp 'cond))
