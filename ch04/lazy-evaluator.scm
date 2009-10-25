@@ -29,6 +29,12 @@
                         (extend-environment (procedure-parameters procedure)
                                             (list-of-delayed-args arguments env)
                                             (procedure-environment procedure))))
+        ((thunk? procedure)
+         (let ((proc (actual-value (thunk-exp procedure) (thunk-env procedure))))
+           (eval-sequence (procedure-body proc)
+                        (extend-environment (procedure-parameters proc)
+                                            (list-of-delayed-args arguments env)
+                                            (procedure-environment proc)))))
         (else (error "Unknown procedure type -- APPLY" procedure))))
 
 
