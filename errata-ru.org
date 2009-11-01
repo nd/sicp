@@ -43,3 +43,13 @@
   Процедура верхнего уровня ambeval (сходная с версией eval?, приведённой в разделе 4.1.7)
   должно быть
   Процедура верхнего уровня ambeval (сходная с версией eval, приведённой в разделе 4.1.7)
+* c. 413
+  (rule (живет-около ?person-1 ?person-2)
+        (and (адрес ?person-1 (?town . ?rest-1))
+             (адрес ?person-1 (?town . ?rest-2))
+             (not (same ?person-1 ?person-2))))
+  должно быть
+  (rule (живет-около ?person-1 ?person-2)
+      (and (адрес ?person-1 (?town . ?rest-1))
+           (адрес ?person-2 (?town . ?rest-2))
+           (not (same ?person-1 ?person-2))))
