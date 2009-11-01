@@ -1,0 +1,36 @@
+;;inefficient solution
+(define (girls)
+  (let ((boat-of-mur     (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (boat-of-dauning (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (boat-of-hall    (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (boat-of-barnakl (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (boat-of-parker  (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (daughter-of-mur     (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (daughter-of-dauning (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (daughter-of-hall    (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (daughter-of-barnakl (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))
+        (daughter-of-parker  (amb 'marry-ann 'gabriella 'lorna 'rozalinda 'mellisa))) 
+
+    (define (boat-of-father-of-gabriella)
+      (cond ((eq? daughter-of-mur     'gabriella) boat-of-mur)
+            ((eq? daughter-of-dauning 'gabriella) boat-of-dauning)
+            ((eq? daughter-of-hall    'gabriella) boat-of-hall)
+            ((eq? daughter-of-barnakl 'gabriella) boat-of-barnakl)
+            ((eq? daughter-of-parker  'gabriella) boat-of-parker)))
+
+    (require (eq? boat-of-barnakl 'gabriella))
+    (require (eq? boat-of-mur     'lorna))
+    (require (eq? boat-of-hall    'rozalinda))
+    (require (eq? boat-of-dauning 'mellisa))
+    (require (eq? boat-of-dauning daughter-of-barnakl))
+
+    (require (not (eq? boat-of-mur     daughter-of-mur)))
+    (require (not (eq? boat-of-dauning daughter-of-dauning)))
+    (require (not (eq? boat-of-hall    daughter-of-hall)))
+    (require (not (eq? boat-of-barnakl daughter-of-barnakl)))
+    (require (not (eq? boat-of-parker  daughter-of-parker)))
+
+    (require (eq? (boat-of-father-of-gabriella) daughter-of-parker))
+
+    (distinct? (list boat-of-mur boat-of-dauning boat-of-hall boat-of-barnakl boat-of-parker))
+    (distinct? (list daughter-of-mur daughter-of-dauning daughter-of-hall daughter-of-barnakl daughter-of-parker))))
