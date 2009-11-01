@@ -1,0 +1,3 @@
+(rule (last-pair? (?x) (?x)))
+(rule (last-pair? (?h . ?t) (?x))
+      (last-pair? ?t (?x)))
