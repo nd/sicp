@@ -1,0 +1,6 @@
+(rule (reverse () ()))
+(rule (reverse (?x) (?x)))
+(rule (reverse (?x ?y) (?y ?x)))
+(rule (reverse (?x ?y . ?z) ?w)
+      (and (reverse ?z ?v)
+           (append-to-form ?v (?y ?x) ?w)))
