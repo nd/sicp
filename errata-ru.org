@@ -53,3 +53,8 @@
       (and (адрес ?person-1 (?town . ?rest-1))
            (адрес ?person-2 (?town . ?rest-2))
            (not (same ?person-1 ?person-2))))
+* с. 422
+  начало страницы:
+  быть ?b
+  должно быть:
+  быть b
