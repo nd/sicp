@@ -1,0 +1,7 @@
+(define (uniquely-asserted contents frame-stream)
+  (stream-flatmap (lambda (frame)
+                    (let ((result (qeval contents (singleton-stream frame))))
+                      (if (null? (stream-cdr result))
+                          (singleton-stream (stream-car result))
+                          the-empty-stream))
+                  frame-stream))
