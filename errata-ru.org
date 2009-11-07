@@ -58,3 +58,12 @@
   быть ?b
   должно быть:
   быть b
+
+* с. 430
+  Эти преобразования производятся процедурами query-syntax-process и contract-questionmark
+  должно быть
+  Эти преобразования производятся процедурами query-syntax-process и contract-question-mark
+* с. 434
+  либо, если сопоставление неудачнно, the-emptystream
+  должно быть
+  либо, если сопоставление неудачнно, the-empty-stream
