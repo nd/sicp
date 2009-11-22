@@ -86,6 +86,7 @@
 (define (set-register-contents! machine register-name value)
   (set-contents! (get-register machine register-name) value)
   'done)
+(define (get-register machine reg-name) ((machine 'get-register) reg-name))
 
 ;;assembler
 (define (assemble controller-text machine)
@@ -129,8 +130,7 @@
         (error "Undefined label -- ASSEMBLE" label-name))))
 
 ;;execution procedures
-(define (make-execution-procedure inst labels machine
-                                  pc flag stack ops)
+(define (make-execution-procedure inst labels machine pc flag stack ops)
   (cond ((eq? (car inst) 'assign)  (make-assign  inst machine labels ops pc))
         ((eq? (car inst) 'test)    (make-test    inst machine labels ops flag pc))
         ((eq? (car inst) 'branch)  (make-branch  inst machine labels flag pc))
@@ -163,6 +163,8 @@
             (set-contents! flag (condition-proc))
             (advance-pc pc)))
         (error "Bad TEST instruction -- ASSEMBLE" inst))))
+
+(define (test-condition test-instruction) (cdr test-instruction))
 
 (define (make-branch inst machine labels flag pc)
   (let ((dest (branch-dest inst)))
@@ -251,3 +253,8 @@
     (if val
         (cadr val)
         (error "Unknown operation -- ASSEMBLE" symbol))))
+
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+      (eq? (car exp) tag)
+      false))
