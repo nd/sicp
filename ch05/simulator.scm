@@ -1,3 +1,5 @@
+(load "../ch03/3.25.scm")
+
 (define (make-machine ops controller-text)
   (let ((machine (make-new-machine)))
     ((machine 'install-operations) ops)
@@ -11,34 +13,39 @@
     (define (dispatch message)
       (cond ((eq? message 'get) contents)
             ((eq? message 'set) (lambda (value) (set! contents value)))
+            ((eq? message 'name) name)
             (else (error "Unknown request -- REGISTER" message))))
     dispatch))
-
 (define (get-contents register) (register 'get))
 (define (set-contents! register value) ((register 'set) value))
+(define (get-name register) (register 'name))
+
 
 ;;stack
 (define (make-stack)
-  (let ((s '()))
-    (define (push x) (set! s (cons x s)))
-    (define (pop)
-      (if (null? s)
-          (error "Empty stack -- POP")
-          (let ((top (car s)))
-            (set! s (cdr s))
-            top)))
-    (define (initialize)
-      (set! s '())
-      'done)
+  (let ((s (make-table)))
+    (define (push reg)
+      (let ((reg-stack ((s 'lookup) (list (get-name reg)))))
+        (if reg-stack
+            ((s 'insert!) (list (get-name reg)) (append (list (get-contents reg)) reg-stack))
+            ((s 'insert!) (list (get-name reg)) (list (get-contents reg))))))
+    (define (pop reg)
+      (let ((reg-stack ((s 'lookup) (list (get-name reg)))))
+        (if (or (null? reg-stack) (false? reg-stack))
+            (error "Empty stack -- POP" (get-name reg))
+            (let ((top (car reg-stack)))
+              ((s 'insert!) (list (get-name reg)) (cdr reg-stack))
+              top))))
     (define (dispatch message)
-      (cond ((eq? message 'push) push)
-            ((eq? message 'pop) (pop))
-            ((eq? message 'initialize) (initialize))
+      (cond ((eq? message 'push)     push)
+            ((eq? message 'pop)      pop)
+            ((eq? message 'contents) s)
             (else (error "Unknown request -- STACK" message))))
     dispatch))
 
-(define (pop stack) (stack 'pop))
-(define (push stack value) ((stack 'push) value))
+(define (pop stack reg) ((stack 'pop) reg))
+(define (push stack reg) ((stack 'push) reg))
+
 
 ;;base machine
 (define (make-new-machine)
@@ -57,9 +64,9 @@
         (let ((val (assoc name register-table)))
           (if val
               (cadr val)
-              (let ((reg (make-register name)))
-                (set! register-table (cons (list name reg) register-table))
-                reg))))
+              (begin
+                (allocate-register name)
+                (lookup-register name)))))
       (define (execute)
         (let ((insts (get-contents pc)))
           (if (null? insts)
@@ -194,13 +201,13 @@
 (define (make-save inst machine stack pc)
   (let ((reg (get-register machine (stack-inst-reg-name inst))))
     (lambda ()
-      (push stack (get-contents reg))
+      (push stack reg)
       (advance-pc pc))))
 
 (define (make-restore inst machine stack pc)
   (let ((reg (get-register machine (stack-inst-reg-name inst))))
     (lambda ()
-      (set-contents! reg (pop stack))
+      (set-contents! reg (pop stack reg))
       (advance-pc pc))))
 
 (define (stack-inst-reg-name stack-instruction) (cadr stack-instruction))
