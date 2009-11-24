@@ -31,6 +31,7 @@
              fact-done))))
     (set-register-contents! m 'n n)
     (m 'start)
+    (newline)
     ((m 'stack) 'print-statistics)
     ((m 'instr-count))))
 
