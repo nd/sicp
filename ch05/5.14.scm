@@ -31,7 +31,8 @@
              fact-done))))
     (set-register-contents! m 'n n)
     (m 'start)
-    ((m 'stack) 'print-statistics)))
+    ((m 'stack) 'print-statistics)
+    ((m 'instr-count))))
 
 ;;max-depth = n - 1
 ;;total-pushes = (n - 1) * 2
