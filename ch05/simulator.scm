@@ -23,11 +23,17 @@
 
 ;;stack
 (define (make-stack)
-  (let ((s (make-table)))
+  (let ((s (make-table))
+        (number-pushes 0)
+        (max-depth     0))
     (define (push reg)
       (let ((reg-stack ((s 'lookup) (list (get-name reg)))))
+        (set! number-pushes (+ number-pushes 1))
         (if reg-stack
-            ((s 'insert!) (list (get-name reg)) (append (list (get-contents reg)) reg-stack))
+            (begin
+              ((s 'insert!) (list (get-name reg)) (append (list (get-contents reg)) reg-stack))
+              (if (< max-depth (+ (length reg-stack) 1))
+                  (set! max-depth (+ (length reg-stack) 1))))
             ((s 'insert!) (list (get-name reg)) (list (get-contents reg))))))
     (define (pop reg)
       (let ((reg-stack ((s 'lookup) (list (get-name reg)))))
@@ -36,10 +42,15 @@
             (let ((top (car reg-stack)))
               ((s 'insert!) (list (get-name reg)) (cdr reg-stack))
               top))))
+    (define (print-statistics)
+      (newline)
+      (display (list 'total-pushes  '= number-pushes
+                     'maximum-depth '= max-depth)))
     (define (dispatch message)
-      (cond ((eq? message 'push)     push)
-            ((eq? message 'pop)      pop)
-            ((eq? message 'contents) s)
+      (cond ((eq? message 'contents)         s)
+            ((eq? message 'push)             push)
+            ((eq? message 'pop)              pop)
+            ((eq? message 'print-statistics) (print-statistics))
             (else (error "Unknown request -- STACK" message))))
     dispatch))
 
