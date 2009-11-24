@@ -34,7 +34,9 @@
               ((s 'insert!) (list (get-name reg)) (append (list (get-contents reg)) reg-stack))
               (if (< max-depth (+ (length reg-stack) 1))
                   (set! max-depth (+ (length reg-stack) 1))))
-            ((s 'insert!) (list (get-name reg)) (list (get-contents reg))))))
+            (begin
+              ((s 'insert!) (list (get-name reg)) (list (get-contents reg)))
+              (set! max-depth 1)))))
     (define (pop reg)
       (let ((reg-stack ((s 'lookup) (list (get-name reg)))))
         (if (or (null? reg-stack) (false? reg-stack))
