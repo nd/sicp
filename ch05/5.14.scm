@@ -30,6 +30,7 @@
              (goto (reg continue))                
              fact-done))))
     (set-register-contents! m 'n n)
+    (m 'trace-on)
     (m 'start)
     (newline)
     ((m 'stack) 'print-statistics)
