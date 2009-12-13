@@ -67,6 +67,9 @@
         (list 'if-alternative if-alternative)
         (list 'definition-value definition-value)
         (list 'definition-variable definition-variable)
+        (list 'car car)
+        (list 'cdr cdr)
+        (list 'null? null?)
         ))
 
 (define eceval
@@ -282,9 +285,50 @@
 ;;;=========
      ev-cond
 ;;;=========
-     (assign exp (op cond->if exp) (reg exp))
-     (goto (label ev-if))
-     
+     (save exp)
+     (save env)
+     (save continue)
+     (save unev)
+     (assign unev (op cond-clauses) (reg exp))
+     (assign exp (op car) (reg unev))
+     (goto (label ev-cond-clause))
+;;;==============
+     ev-cond-else
+;;;==============
+     (assign unev (op cdr) (reg unev))
+     (test (op null?) (reg unev))
+     (branch (label ev-cond-execute-clause-sequence))
+     (goto (label else-in-the-middle-of-cond))
+;;;================
+     ev-cond-clause
+;;;================
+     (save exp)
+     (save env)
+     (save unev)
+     (test (op cond-else-clause?) (reg exp))
+     (branch (label ev-cond-else))
+     (assign continue (label ev-cond-decide))
+     (save continue)
+     (assign exp (op cond-predicate) (reg exp))
+     (goto (label eval-dispatch))
+;;;================
+     ev-cond-decide
+;;;================
+     (restore continue)
+     (restore exp)
+     (restore env)
+     (restore unev)
+     (test (op true?) (reg val))
+     (branch (label ev-cond-execute-clause-sequence))
+     (assign unev (op cdr) (reg unev))
+     (assign exp (op car) (reg unev))
+     (goto (label ev-cond-clause))
+;;;===================
+     ev-cond-execute-clause-sequence
+;;;===================
+     (assign unev (op cond-actions) (reg exp))
+     (goto (label ev-sequence))
+
 
 ;;;===============
      ev-assignment
@@ -340,6 +384,12 @@
      (restore continue)    ; clean up stack (from `apply-dispatch')
      (assign val (const unknown-procedure-type-error))
      (goto (label signal-error))
+
+;;;========================
+     else-in-the-middle-of-cond
+;;;========================
+     (assign val (const else-in-the-middle-of-cond))
+     (goto (label signal-error))     
 
 ;;;==============
      signal-error
