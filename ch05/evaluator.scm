@@ -1,3 +1,9 @@
+(load "simulator.scm")
+
+(define apply-in-underlying-scheme apply)
+(define (apply-primitive-procedure proc args)
+  (apply-in-underlying-scheme (primitive-implementation proc) args))
+
 (define (self-evaluating? exp)
   (cond ((number? exp) true)
         ((string? exp) true)
@@ -30,6 +36,8 @@
   (if (not (null? (cdddr exp)))
       (cadddr exp)
       'false))
+(define (make-if predicate consequent alternative)
+  (list 'if predicate consequent alternative))
 
 (define (cond? exp) (tagged-list? exp 'cond))
 (define (cond->if exp) (expand-clauses (cond-clauses exp)))
@@ -49,6 +57,10 @@
             (make-if (cond-predicate first)
                      (sequence->exp (cond-actions first))
                      (expand-clauses rest))))))
+(define (sequence->exp seq)
+  (cond ((null? seq) seq)
+        ((last-exp? seq) (first-exp seq))
+        (else (make-begin seq))))
 
 (define (lambda? exp) (tagged-list? exp 'lambda))
 (define (lambda-parameters exp) (cadr exp))
@@ -109,6 +121,17 @@
                 (frame-values frame)))))
   (env-loop env))
 
+(define the-empty-environment '())
+(define (enclosing-environment env) (cdr env))
+(define (first-frame env) (car env))
+
+(define (make-frame variables values) (cons variables values))
+(define (frame-variables frame) (car frame))
+(define (frame-values frame) (cdr frame))
+(define (add-binding-to-frame! var val frame)
+  (set-car! frame (cons var (car frame)))
+  (set-cdr! frame (cons val (cdr frame))))
+
 (define (extend-environment vars vals base-env)
   (if (= (length vars) (length vals))
       (cons (make-frame vars vals) base-env)
@@ -141,6 +164,55 @@
             (else (scan (cdr vars) (cdr vals)))))
     (scan (frame-variables frame)
           (frame-values frame))))
+
+(define (setup-environment)
+  (let ((initial-env
+         (extend-environment (primitive-procedure-names)
+                             (primitive-procedure-objects)
+                             the-empty-environment)))
+    (define-variable! 'true true initial-env)
+    (define-variable! 'false false initial-env)
+    initial-env))
+
+(define primitive-procedures
+  (list (list 'car car)
+        (list 'cdr cdr)
+        (list 'cons cons)
+        (list 'null? null?)
+        (list '= =)
+        (list '< <)
+        (list '> >)
+        (list '+ +)
+        (list '- -)
+        (list '* *)
+        (list '/ /)))
+
+(define (primitive-procedure-names) (map car primitive-procedures))
+
+(define (primitive-procedure-objects)
+  (map (lambda (proc) (list 'primitive (cadr proc)))
+       primitive-procedures))
+
+(define (true? x) (not (eq? x false)))
+(define (false? x) (eq? x false))
+
+(define the-global-environment (setup-environment))
+(define (get-global-environment) the-global-environment)
+(define (primitive-implementation proc) (cadr proc))
+
+(define (prompt-for-input string)
+  (newline) (newline) (display string) (newline))
+
+(define (announce-output string)
+  (newline) (display string) (newline))
+
+(define (user-print object)
+  (if (compound-procedure? object)
+      (display (list 'compound-procedure
+                     (procedure-parameters object)
+                     (procedure-body object)
+                     '<procedure-env>))
+      (display object)))
 
 (define build-in-operations
   (list (list 'self-evaluating? self-evaluating?)
@@ -189,12 +261,43 @@
         (list 'expand-clauses expand-clauses)
         (list 'let? let?)
         (list 'let->combination let->combination)
+        (list 'prompt-for-input prompt-for-input)
+        (list 'read read)
+        (list 'get-global-environment get-global-environment)
+        (list 'announce-output announce-output)
+        (list 'user-print user-print)
+        (list 'apply-primitive-procedure apply-primitive-procedure)
+        (list 'rest-exps rest-exps)
+        (list 'true? true?)
+        (list 'false? false?)
+        (list 'if-alternative if-alternative)
+        (list 'definition-value definition-value)
+        (list 'definition-variable definition-variable)
         ))
 
-(define evaluator
+(define eceval
   (make-machine
-   build-in-operations
+   (append build-in-operations
+           (list (list 'initialize-stack
+                       (lambda () (stack 'initialize)))))
    '(
+;;;======================
+     read-eval-print-loop
+;;;======================
+     (perform (op initialize-stack))
+     (assign the-stack (const ()))
+     (perform (op prompt-for-input) (const ";;; EC-Eval input:"))
+     (assign exp (op read))
+     (assign env (op get-global-environment))
+     (assign continue (label print-result))
+     (goto (label eval-dispatch))
+;;;==============
+     print-result
+;;;==============
+     (perform (op announce-output) (const ";;; EC-Eval value:"))
+     (perform (op user-print) (reg val))
+     (goto (label read-eval-print-loop))
+     
 ;;;===============   
      eval-dispatch
 ;;;===============   
@@ -240,7 +343,7 @@
 ;;;========
      ev-let
 ;;;========
-     (assign exp (op let->combination) (op exp))
+     (assign exp (op let->combination) (reg exp))
      (goto (label ev-lambda))
      
 ;;;================
@@ -429,4 +532,25 @@
      (perform (op define-variable!) (reg unev) (reg val) (reg env))
      (assign val (const ok))
      (goto (reg continue))
+
+
+;;;=========================
+     unknown-expression-type
+;;;=========================
+     (assign val (const unknown-expression-type-error))
+     (goto (label signal-error))
+
+;;;========================
+     unknown-procedure-type
+;;;========================
+     (restore continue)    ; clean up stack (from `apply-dispatch')
+     (assign val (const unknown-procedure-type-error))
+     (goto (label signal-error))
+
+;;;==============
+     signal-error
+;;;==============
+     (perform (op user-print) (reg val))
+     (goto (label read-eval-print-loop))
      )))
+
