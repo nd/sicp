@@ -48,11 +48,16 @@
       (newline)
       (display (list 'total-pushes  '= number-pushes
                      'maximum-depth '= max-depth)))
+    (define (initialize)
+      (set! s (make-table))
+      (set! number-pushes 0)
+      (set! max-depth 0))
     (define (dispatch message)
       (cond ((eq? message 'contents)         s)
             ((eq? message 'push)             push)
             ((eq? message 'pop)              pop)
             ((eq? message 'print-statistics) (print-statistics))
+            ((eq? message 'initialize)       (initialize))
             (else (error "Unknown request -- STACK" message))))
     dispatch))
 
