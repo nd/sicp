@@ -75,8 +75,8 @@
 (define eceval
   (make-machine
    (append build-in-operations
-           (list (list 'initialize-stack
-                       (lambda () (stack 'initialize)))))
+           (list (list 'initialize-stack (lambda () ((eceval 'stack) 'initialize)))
+                 (list 'print-stack-statistics (lambda () ((eceval 'stack) 'print-statistics)))))
    '(
 ;;;======================
      read-eval-print-loop
@@ -91,6 +91,7 @@
 ;;;==============
      print-result
 ;;;==============
+     (perform (op print-stack-statistics))
      (perform (op announce-output) (const ";;; EC-Eval value:"))
      (perform (op user-print) (reg val))
      (goto (label read-eval-print-loop))
