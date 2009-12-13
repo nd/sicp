@@ -53,6 +53,7 @@
 (define (lambda? exp) (tagged-list? exp 'lambda))
 (define (lambda-parameters exp) (cadr exp))
 (define (lambda-body exp) (cddr exp))
+(define (make-lambda parameters body) (cons 'lambda (cons parameters body)))
 
 (define (begin? exp) (tagged-list? exp 'begin))
 (define (begin-actions exp) (cdr exp))
@@ -78,6 +79,20 @@
 (define (procedure-parameters p) (cadr p))
 (define (procedure-body p) (caddr p))
 (define (procedure-environment p) (cadddr p))
+
+(define (let? exp) (eq? (car exp) 'let))
+(define (let->combination exp)
+  (let ((parameters (map let-assignment-var   (let-assignments exp)))
+        (values     (map let-assignment-value (let-assignments exp)))
+        (body       (let-body exp)))
+    (append (list (make-lambda parameters body)) values)))
+(define (let-assignments exp) (cadr exp))
+(define (let-body exp) (cddr exp))
+(define (first-assignment assignments) (car assignments))
+(define (rest-assignment  assignments) (cdr assignments))
+(define (let-assignment-var   assignment)  (car assignment))
+(define (let-assignment-value assignment)  (cadr assignment))
+
 
 (define (lookup-variable-value var env)
   (define (env-loop env)
@@ -172,6 +187,8 @@
         (list 'cond-predicate cond-predicate)
         (list 'cond-actions cond-actions)
         (list 'expand-clauses expand-clauses)
+        (list 'let? let?)
+        (list 'let->combination let->combination)
         ))
 
 (define evaluator
@@ -189,6 +206,7 @@
      (test (op if?) (reg exp))              (branch (label ev-if))
      (test (op cond?) (reg exp))            (branch (label ev-cond))
      (test (op lambda?) (reg exp))          (branch (label ev-lambda))
+     (test (op let?) (reg exp))             (branch (label ev-let))
      (test (op begin?) (reg exp))           (branch (label ev-begin))
      (test (op application?) (reg exp))     (branch (label ev-application))
      (goto (label unknown-expression-type))
@@ -219,6 +237,12 @@
      (assign val (op make-procedure) (reg unev) (reg exp) (reg env))
      (goto (reg continue))
 
+;;;========
+     ev-let
+;;;========
+     (assign exp (op let->combination) (op exp))
+     (goto (label ev-lambda))
+     
 ;;;================
      ev-application
 ;;;================
