@@ -344,7 +344,7 @@
      ev-let
 ;;;========
      (assign exp (op let->combination) (reg exp))
-     (goto (label ev-lambda))
+     (goto (label eval-dispatch))
      
 ;;;================
      ev-application
