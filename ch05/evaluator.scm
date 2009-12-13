@@ -31,6 +31,25 @@
       (cadddr exp)
       'false))
 
+(define (cond? exp) (tagged-list? exp 'cond))
+(define (cond->if exp) (expand-clauses (cond-clauses exp)))
+(define (cond-clauses exp) (cdr exp))
+(define (cond-else-clause? clause) (eq? (cond-predicate clause) 'else))
+(define (cond-predicate clause) (car clause))
+(define (cond-actions clause) (cdr clause))
+(define (expand-clauses clauses)
+  (if (null? clauses)
+      'false                          
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (if (cond-else-clause? first)
+            (if (null? rest)
+                (sequence->exp (cond-actions first))
+                (error "ELSE clause isn't last -- COND->IF" clauses))
+            (make-if (cond-predicate first)
+                     (sequence->exp (cond-actions first))
+                     (expand-clauses rest))))))
+
 (define (lambda? exp) (tagged-list? exp 'lambda))
 (define (lambda-parameters exp) (cadr exp))
 (define (lambda-body exp) (cddr exp))
@@ -145,7 +164,15 @@
         (list 'lookup-variable-value lookup-variable-value)
         (list 'extend-environment extend-environment)
         (list 'set-variable-value! set-variable-value!)
-        (list 'define-variable! define-variable!)))
+        (list 'define-variable! define-variable!)
+        (list 'cond? cond?)
+        (list 'cond->if cond->if)
+        (list 'cond-clauses cond-clauses)
+        (list 'cond-else-clause? cond-else-clause?)
+        (list 'cond-predicate cond-predicate)
+        (list 'cond-actions cond-actions)
+        (list 'expand-clauses expand-clauses)
+        ))
 
 (define evaluator
   (make-machine
@@ -160,6 +187,7 @@
      (test (op assignment?) (reg exp))      (branch (label ev-assignment))
      (test (op definition?) (reg exp))      (branch (label ev-definition))
      (test (op if?) (reg exp))              (branch (label ev-if))
+     (test (op cond?) (reg exp))            (branch (label ev-cond))
      (test (op lambda?) (reg exp))          (branch (label ev-lambda))
      (test (op begin?) (reg exp))           (branch (label ev-begin))
      (test (op application?) (reg exp))     (branch (label ev-application))
@@ -330,6 +358,12 @@
      (assign exp (op if-consequent) (reg exp))
      (goto (label eval-dispatch))
 
+;;;=========
+     ev-cond
+;;;=========
+     (assign exp (op cond->if exp) (reg exp))
+     (goto (label ev-if))
+     
 
 ;;;===============
      ev-assignment
