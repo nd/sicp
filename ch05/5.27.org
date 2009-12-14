@@ -11,4 +11,4 @@ recursive factorial:
 |  9 |            10 |          272 |
 | 10 |            11 |          304 |
 maximum-depth = n + 1;
-total-pushes = 32 * n - 16
+total-pushes = 32 * n - 16;

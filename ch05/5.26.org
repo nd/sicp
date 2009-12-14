@@ -11,4 +11,4 @@ iterative factorial:
 |  9 |             2 |          344 |
 | 10 |             2 |          379 |
 maximum-depth = 2;
-total-pushes = 35 * n + 29
+total-pushes = 35 * n + 29;
