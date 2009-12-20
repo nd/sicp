@@ -148,17 +148,26 @@
      ev-application
 ;;;================
      (save continue)
-     (save env)
+     (assign continue (label ev-appl-did-operator-variable))
      (assign unev (op operands) (reg exp))
-     (save unev)
      (assign exp (op operator) (reg exp))
-     (assign continue (label ev-appl-did-operator))
+     (test (op variable?) (reg exp)) (branch (label eval-dispatch))
+     (save env)
+     (save unev)
      (goto (label eval-dispatch))
 ;;;======================
      ev-appl-did-operator
 ;;;======================
      (restore unev)                  ; the operands
      (restore env)
+     (assign argl (op empty-arglist))
+     (assign proc (reg val))         ; the operator
+     (test (op no-operands?) (reg unev))
+     (branch (label apply-dispatch))
+     (save proc)
+;;;======================
+     ev-appl-did-operator-variable
+;;;======================
      (assign argl (op empty-arglist))
      (assign proc (reg val))         ; the operator
      (test (op no-operands?) (reg unev))
