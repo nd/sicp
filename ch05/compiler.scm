@@ -144,7 +144,7 @@
 
 (define (compile-definition exp target linkage ct-env)
   (let ((var (definition-variable exp)))
-    (define-variable! var var ct-env)
+;    (define-variable! var var ct-env)
     (let ((get-value-code (compile (definition-value exp) 'val 'next ct-env)))
       (end-with-linkage linkage
                         (preserving
