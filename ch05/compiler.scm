@@ -97,7 +97,7 @@
                      `((assign ,target (const ,(text-of-quotation exp)))))))
 
 (define (compile-variable exp target linkage ct-env)
-  (let ((address (get-var-lexical-address exp ct-env)))
+  (let ((address (find-variable exp ct-env)))
     (if (not (null? address))
         (end-with-linkage linkage
                           (make-instruction-sequence
@@ -110,7 +110,7 @@
 
 (define (compile-assignment exp target linkage ct-env)
   (let* ((var (assignment-variable exp))
-         (address (get-var-lexical-address var ct-env))
+         (address (find-variable var ct-env))
          (get-value-code (compile (assignment-value exp) 'val 'next ct-env)))
     (end-with-linkage linkage
                       (preserving
@@ -426,7 +426,7 @@
   (let* ((frame (get-frame (frame-number address) env)))
     (set-value-by-displacement! (frame-values frame) (displacement-number address) value)))
 
-(define (get-var-lexical-address var env)
+(define (find-variable var env)
   (define (env-loop env frame-number)
     (define (scan vars displacement)
       (cond ((null? vars)
