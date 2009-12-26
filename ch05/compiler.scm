@@ -435,7 +435,7 @@
              (make-lexical-address frame-number displacement))
             (else (scan (cdr vars) (+ displacement 1)))))
     (if (eq? env the-empty-environment)
-        (error "Variable not found" var)
+        'not-found
         (let ((frame (first-frame env)))
           (scan (frame-variables frame) 0))))
   (env-loop env 0))
