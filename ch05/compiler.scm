@@ -10,8 +10,39 @@
         ((lambda? exp)          (compile-lambda exp target linkage))
         ((begin? exp)           (compile-sequence (begin-actions exp) target linkage))
         ((cond? exp)            (compile (cond->if exp) target linkage))
+        ((+? exp)               (compile-+ exp target linkage))
+        ((-? exp)               (compile-- exp target linkage))
+        ((=? exp)               (compile-= exp target linkage))
+        ((*? exp)               (compile-* exp target linkage))
         ((application? exp)     (compile-application exp target linkage))
         (else (error "Unknown expression type -- COMPILE" exp))))
+
+(define (+? exp) (tagged-list? exp '+))
+(define (-? exp) (tagged-list? exp '-))
+(define (=? exp) (tagged-list? exp '=))
+(define (*? exp) (tagged-list? exp '*))
+
+(define (compile-buildin-operation operation args target linkage)
+  (let ((args-code (spread-arguments args)))
+    (end-with-linkage
+     linkage
+     (append-instruction-sequences
+      args-code
+      (make-instruction-sequence
+       '(arg1 arg2) (list target)
+       `((assign ,target (op ,operation) (arg1) (arg2))))))))
+
+(define (compile-+ exp target linkage)
+  (compile-buildin-operation '+ (operands exp) target linkage))
+
+(define (compile-- exp target linkage)
+  (compile-buildin-operation '- (operands exp) target linkage))
+
+(define (compile-= exp target linkage)
+  (compile-buildin-operation '= (operands exp) target linkage))
+
+(define (compile-* exp target linkage)
+  (compile-buildin-operation '* (operands exp) target linkage))
 
 (define (compile-linkage linkage)
   (cond ((eq? linkage 'return)
@@ -246,6 +277,19 @@
             (goto (reg val)))))
         ((and (not (eq? target 'val)) (eq? linkage 'return))
          (error "return linkage, target not val -- COMPILE" target))))
+
+(define (spread-arguments args)
+  (let* ((first-arg  (car  args))
+         (second-arg (cadr args))
+         (first-code (preserving '(arg2)
+                      (compile first-arg 'arg1 'next)
+                      (make-instruction-sequence
+                       '(arg2) '() '())))
+         (second-code (compile second-arg 'arg2 'next)))
+    (preserving '(env)
+                second-code
+                first-code)))
+
 
 (define (registers-needed s) (if (symbol? s) '() (car s)))
 (define (registers-modified s) (if (symbol? s) '() (cadr s)))
