@@ -388,3 +388,34 @@
 
 (define (make-instruction-sequence needs modifies statements) (list needs modifies statements))
 (define (empty-instruction-sequence) (make-instruction-sequence '() '() '()))
+
+(define (frame-number address) (car address))
+(define (displacement-number address) (cdr address))
+(define (make-lexical-address frame-number displacement-number) (cons frame-number displacement-number))
+
+(define (lexical-address-lookup address env)
+  (define (get-frame frame-number env)
+    (if (= frame-number 0)
+        env
+        (get-frame (- frame-number 1) (enclosing-environment env))))
+  (define (get-value-by-displacement values displacement-number)
+    (if (= displacement-number 0)
+        (car values)
+        (get-value-by-displacement (cdr values) (- displacement-number 1))))
+  (let* ((frame (get-frame (frame-number address) env))
+         (value (get-value-by-displacement (frame-values frame) (displacement-number address))))
+    (if (eq? value '*unassigned*)
+        (error "Unassigned variable at address " address)
+        value)))
+
+(define (lexical-address-set! address value)
+  (define (get-frame frame-number env)
+    (if (= frame-number 0)
+        env
+        (get-frame (- frame-number 1) (enclosing-environment env))))
+  (define (set-value-by-displacement! values displacement-number val)
+    (if (= displacement-number 0)
+        (set-car! values val)
+        (set-value-by-displacement! (cdr values) (- displacement-number 1) val)))
+  (let* ((frame (get-frame (frame-number address) env)))
+    (set-value-by-displacement! (frame-values frame) (displacement-number address) value)))
