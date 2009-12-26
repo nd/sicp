@@ -215,7 +215,7 @@
                 (const ,formals)
                 (reg argl)
                 (reg env))))
-     (compile-sequence (lambda-body exp) 'val 'return extended-ct-env))))
+     (compile-sequence (scan-out-defines (lambda-body exp)) 'val 'return extended-ct-env))))
 
 
 (define label-counter 0)
