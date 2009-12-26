@@ -98,31 +98,49 @@
 
 (define (compile-variable exp target linkage ct-env)
   (let ((address (find-variable exp ct-env)))
-    (if (not (null? address))
+    (if (eq? address 'not-found)
+        (end-with-linkage linkage
+                          (make-instruction-sequence
+                           '(env) (list target)
+                           `((assign ,target
+                                     (op lookup-variable-value)
+                                     (const ,exp)
+                                     (reg env)))))
         (end-with-linkage linkage
                           (make-instruction-sequence
                            '(env) (list target)
                            `((assign ,target
                                      (op lexical-address-lookup)
                                      (const ,address)
-                                     (reg env)))))
-        (error "Undefined variable " exp))))
+                                     (reg env))))))))
 
 (define (compile-assignment exp target linkage ct-env)
   (let* ((var (assignment-variable exp))
          (address (find-variable var ct-env))
          (get-value-code (compile (assignment-value exp) 'val 'next ct-env)))
-    (end-with-linkage linkage
-                      (preserving
-                       '(env)
-                       get-value-code
-                       (make-instruction-sequence
-                        '(env val) (list target)
-                        `((perform (op lexical-address-set!)
-                                   (const ,address)
-                                   (reg val)
-                                   (reg env))
-                          (assign ,target (const ok))))))))
+    (if (eq? address 'not-found)
+        (end-with-linkage linkage
+                          (preserving
+                           '(env)
+                           get-value-code
+                           (make-instruction-sequence
+                            '(env val) (list target)
+                            `((perform (op set-variable-value!)
+                                       (const ,var)
+                                       (reg val)
+                                       (reg env))
+                              (assign ,target (const ok))))))
+        (end-with-linkage linkage
+                          (preserving
+                           '(env)
+                           get-value-code
+                           (make-instruction-sequence
+                            '(env val) (list target)
+                            `((perform (op lexical-address-set!)
+                                       (const ,address)
+                                       (reg val)
+                                       (reg env))
+                              (assign ,target (const ok)))))))))
 
 (define (compile-definition exp target linkage ct-env)
   (let ((var (definition-variable exp)))
