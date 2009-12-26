@@ -22,8 +22,8 @@
 (define (=? exp) (tagged-list? exp '=))
 (define (*? exp) (tagged-list? exp '*))
 
-(define (compile-buildin-operation operation args target linkage)
-  (let ((args-code (spread-arguments args)))
+(define (compile-buildin-operation operation args defaults target linkage)
+  (let ((args-code (spread-arguments args defaults)))
     (end-with-linkage
      linkage
      (append-instruction-sequences
@@ -33,16 +33,41 @@
        `((assign ,target (op ,operation) (arg1) (arg2))))))))
 
 (define (compile-+ exp target linkage)
-  (compile-buildin-operation '+ (operands exp) target linkage))
+  (let ((binary-exp (transform-to-binaries (operator exp) (operands exp))))
+    (compile-buildin-operation '+ (operands binary-exp) '(0 0) target linkage)))
 
 (define (compile-- exp target linkage)
-  (compile-buildin-operation '- (operands exp) target linkage))
+  (let ((binary-exp (transform-to-binaries (operator exp) (operands exp))))
+    (compile-buildin-operation '- (operands binary-exp) '(0 0) target linkage)))
 
 (define (compile-= exp target linkage)
-  (compile-buildin-operation '= (operands exp) target linkage))
+  (let ((binary-exp (transform-=-to-binaries (operands exp))))
+    (compile-buildin-operation '= (operands exp)
+                               (let ((first (and (not (null? (operands binary-exp)))
+                                                 (car (operands binary-exp)))))
+                                 (if first
+                                     (list first first)
+                                     '(0 0)))
+                               target linkage)))
 
 (define (compile-* exp target linkage)
-  (compile-buildin-operation '* (operands exp) target linkage))
+  (let ((binary-exp (transform-to-binaries (operator exp) (operands exp))))
+    (compile-buildin-operation '* (operands binary-exp) '(1 1) target linkage)))
+
+(define (transform-to-binaries op args)
+  (if (<= (length args) 2)
+      (cons op args)
+      (let ((first-arg (car args))
+            (second-arg (transform-to-binaries op (cdr args))))
+        (list op first-arg second-arg))))
+
+(define (transform-=-to-binaries args)
+  (if (<= (length args) 2)
+      (cons '= args)
+      (let ((first-arg (car args))
+            (second-arg (cadr args))
+            (next-check (transform-=-to-binaries (cdr args))))
+        (list 'and (list '= first-arg second-arg) next-check))))
 
 (define (compile-linkage linkage)
   (cond ((eq? linkage 'return)
@@ -278,9 +303,12 @@
         ((and (not (eq? target 'val)) (eq? linkage 'return))
          (error "return linkage, target not val -- COMPILE" target))))
 
-(define (spread-arguments args)
-  (let* ((first-arg  (car  args))
-         (second-arg (cadr args))
+(define (spread-arguments args defaults)
+  (let* ((first-arg  (or (and (not (null? args))
+                              (car args)) (car defaults)))
+         (second-arg (or (and (not (null? args))
+                              (not (null? (cdr args)))
+                              (cadr args)) (cadr defaults)))
          (first-code (preserving '(arg2)
                       (compile first-arg 'arg1 'next)
                       (make-instruction-sequence
