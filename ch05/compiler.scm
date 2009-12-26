@@ -1,4 +1,4 @@
-(load "../ch04/evaluator.scm")
+(load "../ch04/lazy-evaluator.scm")
 
 (define (compile exp target linkage ct-env)
   (cond ((self-evaluating? exp) (compile-self-evaluating exp target linkage))
@@ -457,3 +457,4 @@
         (let ((frame (first-frame env)))
           (scan (frame-variables frame) 0))))
   (env-loop env 0))
+
