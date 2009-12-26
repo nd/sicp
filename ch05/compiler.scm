@@ -408,7 +408,7 @@
         (error "Unassigned variable at address " address)
         value)))
 
-(define (lexical-address-set! address value)
+(define (lexical-address-set! address value env)
   (define (get-frame frame-number env)
     (if (= frame-number 0)
         env
