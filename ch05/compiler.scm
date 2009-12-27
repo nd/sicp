@@ -30,7 +30,7 @@
       args-code
       (make-instruction-sequence
        '(arg1 arg2) (list target)
-       `((assign ,target (op ,operation) (arg1) (arg2))))))))
+       `((assign ,target (op ,operation) (reg arg1) (reg arg2))))))))
 
 (define (compile-+ exp target linkage ct-env)
   (let ((address (find-variable '+ ct-env)))
