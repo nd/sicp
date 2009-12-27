@@ -18,8 +18,20 @@
          (display '<compiled-procedure>))
         (else (display object))))
 
+(define (compile-and-run? exp) (tagged-list? exp 'compile-and-run))
+(define (compile-and-run expression)
+  (let ((instructions (assemble
+                       (statements
+                        (compile expression 'val 'return
+                                 (extend-environment '() '() the-empty-environment)))
+                       eceval)))
+;    (set! the-global-environment (setup-environment))
+    (set-register-contents! eceval 'val instructions)))
+
 (define build-in-operations
   (list (list 'self-evaluating? self-evaluating?)
+        (list 'compile-and-run? compile-and-run?)
+        (list 'compile-and-run compile-and-run)
         (list 'variable? variable?)
         (list 'quoted? quoted?)
         (list 'text-of-quotation text-of-quotation)
@@ -144,6 +156,7 @@
      (test (op lambda?) (reg exp))          (branch (label ev-lambda))
      (test (op let?) (reg exp))             (branch (label ev-let))
      (test (op begin?) (reg exp))           (branch (label ev-begin))
+     (test (op compile-and-run?) (reg exp)) (branch (label ev-compile-and-run))
      (test (op application?) (reg exp))     (branch (label ev-application))
      (goto (label unknown-expression-type))
 
@@ -179,6 +192,15 @@
      (assign exp (op let->combination) (reg exp))
      (goto (label eval-dispatch))
      
+;;;====================
+     ev-compile-and-run
+;;;====================
+     (assign val (op operands) (reg exp))
+     (assign val (op car) (reg val))
+     (assign val (op text-of-quotation) (reg val))
+     (perform (op compile-and-run) (reg val))
+     (goto (label external-entry))
+
 ;;;================
      ev-application
 ;;;================
@@ -468,4 +490,5 @@
 (define (start-eceval)
   (set! the-global-environment (setup-environment))
   (set-register-contents! eceval 'flag false)
+  (eceval 'trace-on)
   (start eceval))
