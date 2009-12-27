@@ -92,6 +92,7 @@
         (list '= =)
         (list 'list list)
         (list 'cons cons)
+        (list 'compound-procedure? compound-procedure?)
         ))
 
 (define eceval
@@ -100,7 +101,7 @@
            (list (list 'initialize-stack (lambda () ((eceval 'stack) 'initialize)))
                  (list 'print-stack-statistics (lambda () ((eceval 'stack) 'print-statistics)))))
    '(
-
+     (assign compapp (label compound-apply))
      (test (op true?) (reg flag))
      (branch (label external-entry))
 ;;;======================
