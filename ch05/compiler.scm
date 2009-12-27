@@ -432,7 +432,7 @@
 (define (lexical-address-lookup address env)
   (define (get-frame frame-number env)
     (if (= frame-number 0)
-        env
+        (first-frame env)
         (get-frame (- frame-number 1) (enclosing-environment env))))
   (define (get-value-by-displacement values displacement-number)
     (if (= displacement-number 0)
