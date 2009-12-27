@@ -1,0 +1,95 @@
+;;compiled version:
+|  n | maximum-depth | total-pushes |
+|----+---------------+--------------|
+|  2 |             1 |           5  |
+|  3 |             2 |           7  |
+|  4 |             3 |           9  |
+|  5 |             4 |          11  |
+|  6 |             5 |          13  |
+|  7 |             6 |          15  |
+|  8 |             7 |          17  |
+|  9 |             8 |          19  |
+| 10 |             9 |          21  |
+total-pushes = 2 * n + 1
+maximum-depth = n - 1
+
+compiled / interpreted:
+-----------------------
+md_c_i = (n - 1) / (n + 1)
+if n -> infinity, limit md_c_i -> 1
+
+tp_c_i = (2 * n + 1) / (32 * n - 16) = 1/16 * ((32 * n + 16) / (32 * n - 16)) = 1/16 * ((2 * n + 1) / (2 * n - 1))
+if n -> infinity, limit tp_c_i -> 1/16
+
+specialized / interpreted:
+--------------------------
+md_s_i = (n - 1) / (n + 1)
+if n -> infinity, limit md_s_i -> 1
+
+tp_s_i = (2n - 2) / (32 * n - 16) = 1 / 16
+
+I got same maximum-depth for compiled function as for specialized
+function, here is a code of the compiled function:
+
+((env)
+ (val) 
+ ((assign val (op make-compiled-procedure) (label entry11) (reg env))
+  (goto (label after-lambda10))
+
+  entry11
+  (assign env (op compiled-procedure-env) (reg proc))
+  (assign env (op extend-environment) (const (n)) (reg argl) (reg env))
+  (assign arg2 (const 1))
+  (assign arg1 (op lexical-address-lookup) (const (0 . 0)) (reg env))
+  (assign val (op =) (reg arg1) (reg arg2))
+  (test (op false?) (reg val))
+  (branch (label false-branch13))
+
+  true-branch14
+  (assign val (const 1))
+  (goto (reg continue))
+
+  false-branch13
+  (save continue) ; 1st save - (save continue) in specialized version
+  (assign arg2 (op lexical-address-lookup) (const (0 . 0)) (reg env))
+  (save arg2)     ; 2nd save - (save n) in specialized version
+  (assign proc (op lookup-variable-value) (const factorial) (reg env))
+  (assign arg2 (const 1))
+  (assign arg1 (op lexical-address-lookup) (const (0 . 0)) (reg env))
+  (assign val (op -) (reg arg1) (reg arg2))
+  (assign argl (op list) (reg val))
+  (test (op primitive-procedure?) (reg proc))
+  (branch (label primitive-branch17))
+
+  compiled-branch16
+  (assign continue (label proc-return18))
+  (assign val (op compiled-procedure-entry) (reg proc))
+  (goto (reg val))
+
+  proc-return18
+  (assign arg1 (reg val))
+  (goto (label after-call15))
+
+  primitive-branch17
+  (assign arg1 (op apply-primitive-procedure) (reg proc) (reg argl))
+
+  after-call15
+  (restore arg2)
+  (assign val (op *) (reg arg1) (reg arg2))
+  (restore continue)
+  (goto (reg continue))
+
+  after-if12
+  after-lambda10
+  (perform (op define-variable!) (const factorial) (reg val) (reg env))
+  (assign val (const ok))))
+
+We can see that here there are only 2 saves, and the specialized
+function also have only 2 saves.
+
+Compiled version has 3 additional pushes before it starts its' execution:
+(save continue) in ev-application
+(save proc)     in ev-appl-did-operator-variable
+(save argl)     in ev-appl-operand-loop
+
+So I don't notice big differences between compiled and specialized versions...
