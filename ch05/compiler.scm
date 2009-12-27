@@ -1,4 +1,4 @@
-(load "../ch04/lazy-evaluator.scm")
+(load "../ch04/evaluator.scm")
 
 (define (compile exp target linkage ct-env)
   (cond ((self-evaluating? exp) (compile-self-evaluating exp target linkage))
@@ -470,3 +470,11 @@
           (scan (frame-variables frame) 0))))
   (env-loop env 0))
 
+(define (scan-out-defines body)
+  (let* ((defs (filter definition? body))
+         (non-defs (filter (lambda (x) (not (definition? x))) body))
+         (assignments (map (lambda (def) (make-let-assignment (definition-variable def) ''*unassigned*)) defs))
+         (sets (map (lambda (def) (make-assignment (definition-variable def) (definition-value def))) defs)))
+    (if (not (null? defs))
+        (list (let->combination (make-let assignments (append sets non-defs))))
+        body)))
