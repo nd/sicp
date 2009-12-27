@@ -91,6 +91,7 @@
         (list '* *)
         (list '= =)
         (list 'list list)
+        (list 'cons cons)
         ))
 
 (define eceval
