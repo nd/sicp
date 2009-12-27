@@ -1,0 +1,51 @@
+
+|  n | fib(n) | maximum-depth | total-pushes |
+|----+--------+---------------+--------------|
+|  2 |      1 |             2 |           12 |
+|  3 |      2 |             3 |           19 |
+|  4 |      3 |             4 |           33 |
+|  5 |      5 |             5 |           54 |
+|  6 |      8 |             6 |           89 |
+|  7 |     13 |             7 |          145 |
+|  8 |     21 |             8 |          236 |
+|  9 |     34 |             9 |          383 |
+| 10 |     55 |            10 |          621 |
+maximum-depth = n;
+S(n) = S(n - 1) + S(n - 2) + 2;
+total-pushes = 7 * fib(n + 1) - 2;
+
+compiled / interpreted:
+-----------------------
+md_c_i = n / (n + 1)
+if n -> infinity, limit md_c_i -> 1
+
+tp_c_i = (7 * fib(n + 1) - 2) / (56 * fib(n + 1) - 40) = 1/8 * ((56 * fib(n + 1) - 16) / (56 * fib(n + 1) - 40))
+if n -> infinity, limit tp_c_i -> 1/8
+
+data for specialized version:
+-----------------------------
+|  n | fib(n) | maximum-depth | total-pushes |
+|----+--------+---------------+--------------|
+|  2 |      1 |             1 |            4 |
+|  3 |      2 |             2 |            8 |
+|  4 |      3 |             3 |           16 |
+|  5 |      5 |             4 |           28 |
+|  6 |      8 |             5 |           48 |
+|  7 |     13 |             6 |           80 |
+|  8 |     21 |             7 |          132 |
+|  9 |     34 |             8 |          216 |
+| 10 |     55 |             9 |          352 |
+maximum-depth = n - 1;
+S(n) = S(n - 1) + S(n - 2) + 4;
+total-pushes = 4 * fib(n + 1) - 4;
+
+specialized / interpreted:
+--------------------------
+md_s_i = (n - 1) / (n + 1)
+if n -> infinity, limit md_s_i -> 1
+
+tp_s_i = (4 * fib(n + 1) - 4) / (56 * fib(n + 1) - 40) = 1 / 14 * ((56 * fib(n + 1) - 56) / (56 * fib(n + 1) - 40))
+if n -> infinity, limit tp_c_i -> 1/14
+
+it seems that I forget how to deal with limits...
+
