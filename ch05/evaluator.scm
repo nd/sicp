@@ -8,6 +8,16 @@
 (define (empty-arglist) '())
 (define (adjoin-arg arg arglist) (append arglist (list arg)))
 
+(define (user-print object)
+  (cond ((compound-procedure? object)
+         (display (list 'compound-procedure
+                        (procedure-parameters object)
+                        (procedure-body object)
+                        '<procedure-env>)))
+        ((compiled-procedure? object)
+         (display '<compiled-procedure>))
+        (else (display object))))
+
 (define build-in-operations
   (list (list 'self-evaluating? self-evaluating?)
         (list 'variable? variable?)
@@ -39,9 +49,13 @@
         (list 'make-procedure make-procedure)
         (list 'primitive-procedure? primitive-procedure?)
         (list 'compound-procedure? compound-procedure?)
+        (list 'compiled-procedure? compiled-procedure?)
         (list 'procedure-parameters procedure-parameters)
         (list 'procedure-body procedure-body)
         (list 'procedure-environment procedure-environment)
+        (list 'compiled-procedure-entry compiled-procedure-entry)
+        (list 'make-compiled-procedure make-compiled-procedure)
+        (list 'compiled-procedure-env compiled-procedure-env)
         (list 'lookup-variable-value lookup-variable-value)
         (list 'extend-environment extend-environment)
         (list 'set-variable-value! set-variable-value!)
@@ -70,6 +84,13 @@
         (list 'car car)
         (list 'cdr cdr)
         (list 'null? null?)
+        (list 'assemble assemble)
+        (list 'lexical-address-lookup lexical-address-lookup)
+        (list '+ +)
+        (list '- -)
+        (list '* *)
+        (list '= =)
+        (list 'list list)
         ))
 
 (define eceval
@@ -78,6 +99,9 @@
            (list (list 'initialize-stack (lambda () ((eceval 'stack) 'initialize)))
                  (list 'print-stack-statistics (lambda () ((eceval 'stack) 'print-statistics)))))
    '(
+
+     (test (op true?) (reg flag))
+     (branch (label external-entry))
 ;;;======================
      read-eval-print-loop
 ;;;======================
@@ -96,6 +120,15 @@
      (perform (op user-print) (reg val))
      (goto (label read-eval-print-loop))
      
+;;;================
+     external-entry
+;;;================
+     (perform (op initialize-stack))
+     (assign env (op get-global-environment))
+     (assign continue (label print-result))
+     (goto (reg val))
+
+
 ;;;===============   
      eval-dispatch
 ;;;===============   
@@ -214,6 +247,8 @@
      (branch (label primitive-apply))
      (test (op compound-procedure?) (reg proc))
      (branch (label compound-apply))
+     (test (op compiled-procedure?) (reg proc))
+     (branch (label compiled-apply))
      (goto (label unknown-procedure-type))
 
 ;;;=================
@@ -231,6 +266,13 @@
      (assign env (op extend-environment) (reg unev) (reg argl) (reg env))
      (assign unev (op procedure-body) (reg proc))
      (goto (label ev-sequence))
+
+;;;================
+     compiled-apply
+;;;================
+     (restore continue)
+     (assign val (op compiled-procedure-entry) (reg proc))
+     (goto (reg val))
 
 
 ;;;==========
@@ -408,3 +450,20 @@
      (goto (label read-eval-print-loop))
      )))
 
+(define (compile-and-go expression)
+  (let ((instructions (assemble
+                       (statements
+                        (compile expression
+                                 'val 'return
+                                 (extend-environment '() '() the-empty-environment)))
+                                eceval)))
+    (set! the-global-environment (setup-environment))
+    (set-register-contents! eceval 'val instructions)
+    (set-register-contents! eceval 'flag true)
+;    (eceval 'trace-on)
+    (start eceval)))
+
+(define (start-eceval)
+  (set! the-global-environment (setup-environment))
+  (set-register-contents! eceval 'flag false)
+  (start eceval))
